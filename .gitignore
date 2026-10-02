@@ -1,0 +1,4 @@
+# WebRTC checkout and build output created by fetch_webrtc_android_mac.sh
+/src/
+*.log
+.DS_Store

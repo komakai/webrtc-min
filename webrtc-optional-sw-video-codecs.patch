@@ -1,0 +1,152 @@
+diff --git a/sdk/android/BUILD.gn b/sdk/android/BUILD.gn
+index d184998..61d3aa6 100644
+--- a/sdk/android/BUILD.gn
++++ b/sdk/android/BUILD.gn
+@@ -138,7 +138,6 @@ if (is_android) {
+     ]
+ 
+     deps = [
+-      ":dav1d_av1_jni",
+       ":internal_jni",
+       ":libjingle_peerconnection_jni",
+       ":libjingle_peerconnection_metrics_default_jni",
+@@ -153,6 +152,9 @@ if (is_android) {
+ 
+     # All APKs that use this shared library must depend on this list of targets
+     java_targets = [ ":libjingle_peerconnection_metrics_default_java" ]
++    if (rtc_include_software_video_codecs) {
++      deps += [ ":dav1d_av1_jni" ]
++    }
+   }
+ 
+   #######################
+@@ -1051,16 +1053,22 @@ if (current_os == "linux" || is_android) {
+     deps = [
+       ":base_jni",
+       ":generated_swcodecs_jni",
+-      ":libvpx_vp8_jni",
+-      ":libvpx_vp9_jni",
+       ":native_api_jni",
+       ":video_jni",
+       "../../api/environment",
+-      "../../api/video_codecs:builtin_video_decoder_factory",
+-      "../../api/video_codecs:builtin_video_encoder_factory",
+       "../../api/video_codecs:video_codecs_api",
+       "//third_party/jni_zero",
+     ]
++    if (rtc_include_software_video_codecs) {
++      deps += [
++        ":libvpx_vp8_jni",
++        ":libvpx_vp9_jni",
++        "../../api/video_codecs:builtin_video_decoder_factory",
++        "../../api/video_codecs:builtin_video_encoder_factory",
++      ]
++    } else {
++      defines = [ "WEBRTC_NO_SOFTWARE_VIDEO_CODECS" ]
++    }
+   }
+ 
+   ######################
+diff --git a/sdk/android/src/jni/software_video_decoder_factory.cc b/sdk/android/src/jni/software_video_decoder_factory.cc
+index 86c26f7..b60f969 100644
+--- a/sdk/android/src/jni/software_video_decoder_factory.cc
++++ b/sdk/android/src/jni/software_video_decoder_factory.cc
+@@ -13,7 +13,9 @@
+ #include <memory>
+ 
+ #include "api/environment/environment.h"
++#if !defined(WEBRTC_NO_SOFTWARE_VIDEO_CODECS)
+ #include "api/video_codecs/builtin_video_decoder_factory.h"
++#endif
+ #include "api/video_codecs/video_decoder_factory.h"
+ #include "sdk/android/generated_swcodecs_jni/SoftwareVideoDecoderFactory_jni.h"
+ #include "sdk/android/native_api/jni/java_types.h"
+@@ -23,8 +25,28 @@
+ namespace webrtc {
+ namespace jni {
+ 
++#if defined(WEBRTC_NO_SOFTWARE_VIDEO_CODECS)
++namespace {
++// Built without software video codecs: supports no formats.
++class EmptyVideoDecoderFactory : public VideoDecoderFactory {
++ public:
++  std::vector<SdpVideoFormat> GetSupportedFormats() const override {
++    return {};
++  }
++  std::unique_ptr<VideoDecoder> Create(const Environment& env,
++                                    const SdpVideoFormat& format) override {
++    return nullptr;
++  }
++};
++}  // namespace
++#endif
++
+ static jlong JNI_SoftwareVideoDecoderFactory_CreateFactory(JNIEnv* env) {
++#if defined(WEBRTC_NO_SOFTWARE_VIDEO_CODECS)
++  return NativeToJavaPointer(new EmptyVideoDecoderFactory());
++#else
+   return NativeToJavaPointer(CreateBuiltinVideoDecoderFactory().release());
++#endif
+ }
+ 
+ jboolean JNI_SoftwareVideoDecoderFactory_IsSupported(
+diff --git a/sdk/android/src/jni/software_video_encoder_factory.cc b/sdk/android/src/jni/software_video_encoder_factory.cc
+index d7959e5..62ee8cd 100644
+--- a/sdk/android/src/jni/software_video_encoder_factory.cc
++++ b/sdk/android/src/jni/software_video_encoder_factory.cc
+@@ -11,7 +11,9 @@
+ #include <jni.h>
+ 
+ #include "api/environment/environment.h"
++#if !defined(WEBRTC_NO_SOFTWARE_VIDEO_CODECS)
+ #include "api/video_codecs/builtin_video_encoder_factory.h"
++#endif
+ #include "api/video_codecs/video_encoder_factory.h"
+ #include "sdk/android/generated_swcodecs_jni/SoftwareVideoEncoderFactory_jni.h"
+ #include "sdk/android/native_api/jni/java_types.h"
+@@ -21,8 +23,28 @@
+ namespace webrtc {
+ namespace jni {
+ 
++#if defined(WEBRTC_NO_SOFTWARE_VIDEO_CODECS)
++namespace {
++// Built without software video codecs: supports no formats.
++class EmptyVideoEncoderFactory : public VideoEncoderFactory {
++ public:
++  std::vector<SdpVideoFormat> GetSupportedFormats() const override {
++    return {};
++  }
++  std::unique_ptr<VideoEncoder> Create(const Environment& env,
++                                    const SdpVideoFormat& format) override {
++    return nullptr;
++  }
++};
++}  // namespace
++#endif
++
+ static jlong JNI_SoftwareVideoEncoderFactory_CreateFactory(JNIEnv* env) {
++#if defined(WEBRTC_NO_SOFTWARE_VIDEO_CODECS)
++  return NativeToJavaPointer(new EmptyVideoEncoderFactory());
++#else
+   return NativeToJavaPointer(CreateBuiltinVideoEncoderFactory().release());
++#endif
+ }
+ 
+ jboolean JNI_SoftwareVideoEncoderFactory_IsSupported(
+diff --git a/webrtc.gni b/webrtc.gni
+index dce017b..caa8ce7 100644
+--- a/webrtc.gni
++++ b/webrtc.gni
+@@ -255,6 +255,12 @@ declare_args() {
+ 
+   # When true, include the Perfetto library.
+   rtc_use_perfetto = false
++
++  # When false, the Android SDK is built without WebRTC's software video
++  # codecs (libvpx VP8/VP9, libaom AV1 encoder, dav1d AV1 decoder).
++  # SoftwareVideoEncoderFactory/SoftwareVideoDecoderFactory then report no
++  # codecs, so video relies on MediaCodec (HardwareVideo*Factory).
++  rtc_include_software_video_codecs = true
+ }
+ 
+ if (!build_with_mozilla) {

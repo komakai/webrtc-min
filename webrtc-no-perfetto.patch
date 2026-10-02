@@ -1,0 +1,27 @@
+diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
+index 62a7d5c..07a004a 100644
+--- a/rtc_base/BUILD.gn
++++ b/rtc_base/BUILD.gn
+@@ -234,8 +234,8 @@ rtc_library("event_tracer") {
+     "//third_party/abseil-cpp/absl/base:nullability",
+     "//third_party/abseil-cpp/absl/strings:string_view",
+   ]
+-  all_dependent_configs = [ "//third_party/perfetto/gn:public_config" ]
+   if (rtc_use_perfetto) {
++    all_dependent_configs = [ "//third_party/perfetto/gn:public_config" ]
+     if (build_with_chromium) {
+       deps += [ "//third_party/perfetto:libperfetto" ]
+     } else {
+@@ -245,9 +245,10 @@ rtc_library("event_tracer") {
+         "//third_party/perfetto/src/tracing:platform_impl",
+       ]
+     }
+-  } else {
+-    deps += [ "//third_party/perfetto/include/perfetto/tracing" ]
+   }
++  # Without Perfetto the trace macros are no-ops and include no Perfetto
++  # headers, so don't depend on them (that would pull in protoc-generated
++  # Perfetto protos and the whole Perfetto checkout).
+ }
+ 
+ rtc_library("histogram_percentile_counter") {

@@ -1,0 +1,105 @@
+diff --git a/config/android/BUILD.gn b/config/android/BUILD.gn
+index 5ba153643..8fb1e47d3 100644
+--- a/config/android/BUILD.gn
++++ b/config/android/BUILD.gn
+@@ -85,6 +85,11 @@ config("compiler") {
+ # that is Android-only. Please see that target for advice on what should go in
+ # :runtime_library vs. :compiler.
+ config("runtime_library") {
++  if (!use_custom_libcxx) {
++    # Link the NDK's libc++ statically so binaries don't need
++    # libc++_shared.so shipped alongside them.
++    ldflags = [ "-static-libstdc++" ]
++  }
+ }
+ 
+ config("hide_all_but_jni_onload") {
+diff --git a/config/clang/clang.gni b/config/clang/clang.gni
+index 1e5dc5753..64d81061c 100644
+--- a/config/clang/clang.gni
++++ b/config/clang/clang.gni
+@@ -85,6 +85,11 @@ declare_args() {
+ 
+   clang_base_path = default_clang_base_path
+ 
++  # Set to false when clang_base_path points at a clang other than Chromium's
++  # pinned tip-of-tree build (e.g. the Android NDK's clang). This drops flags
++  # that only recent clang understands.
++  use_chromium_clang = true
++
+   # Specifies whether or not bitcode should be embedded during compilation. This
+   # is used for creating a MLGO corpus from Chromium in the non-ThinLTO case.
+   clang_embed_bitcode = false
+diff --git a/config/compiler/BUILD.gn b/config/compiler/BUILD.gn
+index c106acfca..547cd98e2 100644
+--- a/config/compiler/BUILD.gn
++++ b/config/compiler/BUILD.gn
+@@ -588,7 +588,15 @@ config("compiler") {
+   if (is_clang) {
+     # Flags for diagnostics.
+     cflags += [ "-fcolor-diagnostics" ]
+-    if (!is_wasm) {
++    if (!use_chromium_clang) {
++      # Older clang doesn't know some of the warnings disabled below, and
++      # wrongly flags deprecated fields used by implicit copy constructors.
++      cflags += [
++        "-Wno-unknown-warning-option",
++        "-Wno-error=deprecated-declarations",
++      ]
++    }
++    if (!is_wasm && use_chromium_clang) {
+       if (!is_win) {
+         cflags += [ "-fdiagnostics-show-inlining-chain" ]
+       } else {
+@@ -629,7 +637,7 @@ config("compiler") {
+     # The performance improvement does not seem worth the risk. See
+     # https://crbug.com/484082200 for background and https://crrev.com/c/7593035
+     # for discussion.
+-    if (!is_wasm) {
++    if (!is_wasm && use_chromium_clang) {
+       cflags += [ "-fno-lifetime-dse" ]
+     }
+ 
+@@ -1749,7 +1757,10 @@ config("runtime_library") {
+   # can be replaced by the C++ symbols. This config ensures the C++ symbols
+   # exist and are strong in order to cause that replacement to occur by
+   # explicitly linking in clang's compiler-rt library.
+-  if (is_clang && !(is_a_target_toolchain && is_cronet_build)) {
++  # Skipped without Rust so that toolchains lacking host compiler-rt (e.g. the
++  # Android NDK clang building host tools) still work.
++  if (is_clang && toolchain_has_rust &&
++      !(is_a_target_toolchain && is_cronet_build)) {
+     configs += [ "//build/config/clang:compiler_builtins" ]
+   }
+ 
+diff --git a/config/sanitizers/sanitizers.gni b/config/sanitizers/sanitizers.gni
+index d06cc2953..738f96089 100644
+--- a/config/sanitizers/sanitizers.gni
++++ b/config/sanitizers/sanitizers.gni
+@@ -5,6 +5,7 @@
+ import("//build/config/cast.gni")
+ import("//build/config/chrome_build.gni")
+ import("//build/config/chromeos/args.gni")
++import("//build/config/clang/clang.gni")
+ import("//build/config/profiling/profiling.gni")
+ import("//build/toolchain/toolchain.gni")
+ 
+@@ -535,14 +536,15 @@ template("ubsan_hardening") {
+       cflags = [
+         "-fsanitize=${invoker.sanitizer}",
+         "-fsanitize-trap=${invoker.sanitizer}",
+-
++      ]
++      if (use_chromium_clang) {
+         # Prevents `__has_feature(undefined_behavior_sanitizer)`
+         # from evaluating true. Configs defined here are intended to
+         # be usable even in release builds, i.e. as widely as possible.
+         # It's important not to have full-on UBSan workarounds activate
+         # just because we built support for a specific sanitizer.
+-        "-fsanitize-ignore-for-ubsan-feature=${invoker.sanitizer}",
+-      ]
++        cflags += [ "-fsanitize-ignore-for-ubsan-feature=${invoker.sanitizer}" ]
++      }
+       if (defined(invoker.cflags)) {
+         cflags += invoker.cflags
+       }
