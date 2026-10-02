@@ -2,3 +2,4 @@
 /src/
 *.log
 .DS_Store
+/ios/

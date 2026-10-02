@@ -225,10 +225,18 @@ fetch_dep third_party/libyuv
 # nasm only assembles x86 code; gn just needs its build files.
 fetch_dep third_party/nasm --no-cone /BUILD.gn /nasm_sources.gni \
   /nasm_assemble.gni
+# The codec repos without their tests, docs, tools and vendored copies of
+# other libraries (~25 MB). Other CPUs' assembly is kept, except for CPUs no
+# Android or Apple device uses.
 if [ "$SOFTWARE_VIDEO_CODECS" != 0 ]; then
-  fetch_dep third_party/dav1d/libdav1d
-  fetch_dep third_party/libaom/source/libaom
-  fetch_dep third_party/libvpx/source/libvpx
+  fetch_dep third_party/dav1d/libdav1d --no-cone '/*' '!/src/loongarch/' \
+    '!/src/riscv/' '!/src/ppc/'
+  fetch_dep third_party/libaom/source/libaom --no-cone '/*' '!/test/' '!/doc/' \
+    '!/tools/' '!/examples/' '!/third_party/highway/' '!/third_party/libyuv/' \
+    '!/third_party/googletest/' '!/third_party/libwebm/'
+  fetch_dep third_party/libvpx/source/libvpx --no-cone '/*' '!/test/' \
+    '!/build_debug/' '!/tools/' '!/third_party/libyuv/' \
+    '!/third_party/googletest/' '!/third_party/libwebm/'
 fi
 fetch_dep third_party/sframe/src
 

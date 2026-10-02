@@ -1,0 +1,59 @@
+diff --git a/toolchain/apple/toolchain.gni b/toolchain/apple/toolchain.gni
+index a1d061b..c7470e6 100644
+--- a/toolchain/apple/toolchain.gni
++++ b/toolchain/apple/toolchain.gni
+@@ -217,8 +217,17 @@ template("single_apple_toolchain") {
+     linker_driver_args = "-Wcrl,driver,$ld"
+ 
+     # Specify an explicit path for the strip binary.
+-    _strippath = "${prefix}llvm-strip"
+-    _installnametoolpath = "${prefix}llvm-install-name-tool"
++    if (use_chromium_clang) {
++      _strippath = "${prefix}llvm-strip"
++      _installnametoolpath = "${prefix}llvm-install-name-tool"
++      _dsymutilpath = rebase_path("//tools/clang/dsymutil/bin/dsymutil",
++                                  root_build_dir)
++    } else {
++      # Xcode's toolchain has the Apple-named tools, not the llvm- ones.
++      _strippath = "${prefix}strip"
++      _installnametoolpath = "${prefix}install_name_tool"
++      _dsymutilpath = "${prefix}dsymutil"
++    }
+     linker_driver_args += " -Wcrl,strippath,${_strippath} -Wcrl,installnametoolpath,${_installnametoolpath}"
+     _enable_dsyms = enable_dsyms
+     _save_unstripped_output = save_unstripped_output
+@@ -235,9 +244,7 @@ template("single_apple_toolchain") {
+     # If dSYMs are enabled, this flag will be added to the link tools.
+     if (_enable_dsyms) {
+       dsym_switch = " -Wcrl,dsym,{{root_out_dir}} "
+-      dsym_switch += "-Wcrl,dsymutilpath," +
+-                     rebase_path("//tools/clang/dsymutil/bin/dsymutil",
+-                                 root_build_dir) + " "
++      dsym_switch += "-Wcrl,dsymutilpath," + _dsymutilpath + " "
+ 
+       # All the toolchains are defined in the context of the default toolchain,
+       # this means that the global variable `current_cpu` is not correct, it
+diff --git a/toolchain/mac/BUILD.gn b/toolchain/mac/BUILD.gn
+index 8a6085b..65fd59c 100644
+--- a/toolchain/mac/BUILD.gn
++++ b/toolchain/mac/BUILD.gn
+@@ -2,6 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
++import("//build/config/clang/clang.gni")
+ import("//build/config/mac/mac_sdk.gni")
+ import("//build/config/v8_target_cpu.gni")
+ import("//build/toolchain/apple/toolchain.gni")
+@@ -22,8 +23,9 @@ template("mac_toolchain") {
+       forward_variables_from(invoker.toolchain_args, "*")
+       current_os = "mac"
+       if (target_os == "ios") {
+-        # Use LLD for the host part of a chrome/ios build.
+-        use_lld = true
++        # Use LLD for the host part of a chrome/ios build. Xcode's clang has
++        # no LLD (or llvm-ar), so keep the system linker with it.
++        use_lld = use_chromium_clang
+ 
+         # Override `is_component_build` for the host toolchain.
+         # See https://crbug.com/gn/286 for details why this is
