@@ -1,7 +1,8 @@
 # webrtc-min
 
-Builds WebRTC's `libjingle_peerconnection_so.so` for Android without
-depot_tools, gclient or the multi-gigabyte Chromium dependency set.
+Builds WebRTC's `libjingle_peerconnection_so.so` for Android and
+`WebRTC.framework` for iOS without depot_tools, gclient or the multi-gigabyte
+Chromium dependency set.
 
 ## Android with CMake
 
@@ -31,6 +32,26 @@ them (see `webrtc/RECIPE.md`) still uses the gn build below. The compile flags
 follow Chromium's release config for Android, minus its warning flags,
 `-Werror`, debug-info flags and the `-fsanitize=...`/`-fsanitize-trap=...`
 hardening checks (array bounds, return, unreachable).
+
+## iOS with CMake
+
+The same submodules build `WebRTC.framework` with Xcode's clang, one
+architecture per build directory:
+
+```sh
+cmake -B out/ios-arm64 -G Ninja -DCMAKE_SYSTEM_NAME=iOS \
+  -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0
+ninja -C out/ios-arm64 WebRTC   # -> out/ios-arm64/webrtc/sdk/WebRTC.framework
+xcodebuild -create-xcframework \
+  -framework out/ios-arm64/webrtc/sdk/WebRTC.framework -output out/WebRTC.xcframework
+```
+
+Like the Android build, it has no software video codecs (video uses
+VideoToolbox's H.264/H.265; the VP8/VP9/AV1 classes and headers are left out)
+and no protobuf. Otherwise the framework has the same public headers, module
+map and exported `RTC*` classes as gn's (see `webrtc/RECIPE.md`). Only device
+(arm64) builds are supported so far: the simulator would also need
+`-DCMAKE_OSX_SYSROOT=iphonesimulator` and an `iPhoneSimulator` Info.plist.
 
 ## Android with gn
 
