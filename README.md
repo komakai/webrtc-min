@@ -33,6 +33,13 @@ follow Chromium's release config for Android, minus its warning flags,
 `-Werror`, debug-info flags and the `-fsanitize=...`/`-fsanitize-trap=...`
 hardening checks (array bounds, return, unreachable).
 
+Set the environment variable `WEBRTC_MIN` (e.g. `WEBRTC_MIN=1 cmake -B ...`)
+to compile only the third-party files WebRTC links: Abseil, BoringSSL, libyuv,
+Opus and sframe without the files no WebRTC build loads, and on Android no
+libjpeg_turbo (about 300 fewer files on Android). The library is the same size
+with the same exports; `third_party/RECIPE.md` has how the lists were made and
+checked. `-DWEBRTC_MIN=ON/OFF` overrides the variable.
+
 ## iOS with CMake
 
 The same submodules build `WebRTC.framework` with Xcode's clang, one

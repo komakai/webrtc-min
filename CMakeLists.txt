@@ -13,7 +13,18 @@
 cmake_minimum_required(VERSION 3.22)
 project(webrtc_min C CXX ASM)
 
-option(WEBRTC_MIN "Build only the third-party code WebRTC uses" ON)
+# WEBRTC_MIN: build only the third-party files WebRTC links (see
+# third_party/RECIPE.md), instead of the libraries' full source lists. Taken
+# from the WEBRTC_MIN environment variable (set and not 0/OFF/NO/FALSE means
+# on) unless -DWEBRTC_MIN=ON/OFF is given.
+if(NOT DEFINED WEBRTC_MIN)
+  if(DEFINED ENV{WEBRTC_MIN} AND NOT "$ENV{WEBRTC_MIN}" MATCHES "^(|0|[Oo][Ff][Ff]|[Nn][Oo]|[Ff][Aa][Ll][Ss][Ee])$")
+    set(WEBRTC_MIN ON)
+  else()
+    set(WEBRTC_MIN OFF)
+  endif()
+endif()
+message(STATUS "WEBRTC_MIN: ${WEBRTC_MIN}")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
