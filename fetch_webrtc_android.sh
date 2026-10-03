@@ -10,9 +10,12 @@
 # Environment:
 #   ANDROID_NDK_HOME  use an existing NDK instead of downloading one.
 #   NDK_URL           NDK zip to download (default: r30, matching DEPS).
-#   JAVA_HOME         use an existing JDK (for javap) instead of downloading.
-#   ANDROID_HOME      Android SDK to take platforms/android-<ver>/ from, if it has
-#                     it (default ~/Android/Sdk); otherwise downloaded.
+#   JAVA_HOME         use an existing JDK (for javap) instead of downloading
+#                     (default: the JDK of the javap on PATH, if any).
+#   ANDROID_HOME      Android SDK to take platforms/android-<ver>/ from
+#                     (default ~/Android/Sdk). If it lacks the version DEPS
+#                     pins, its newest platform is used; with no platforms,
+#                     the pinned one is downloaded.
 #   A ninja on PATH is used instead of downloading one.
 #   SOFTWARE_VIDEO_CODECS=0  build without libvpx (VP8/VP9), libaom and dav1d
 #                     (AV1) and don't fetch them; video then relies on the
@@ -254,29 +257,46 @@ else
 fi
 
 # android.jar is used to generate JNI headers for framework classes. Only
-# platforms/android-<version>/ is read, so an installed Android SDK with that
-# platform can stand in for the download (jni_zero hard-codes this path, so a
-# symlink is needed rather than setting android_sdk_root).
+# platforms/android-<version>/ is read, so an installed Android SDK platform
+# can stand in for the download (jni_zero hard-codes this path, so a symlink is
+# needed rather than setting android_sdk_root). javap only reads the
+# signatures of long-standing framework classes, so an older platform than the
+# one DEPS pins works; a class it lacked would fail the build, not miscompile.
 read -r pkg ver < <(deps_query third_party/android_sdk/public:chromium/third_party/android_sdk/public/platforms/)
 SDK_PLATFORM=${pkg##*/}
 SDK_LINK=$SRC/third_party/android_sdk/public
 LOCAL_SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}
-if [ -f "$LOCAL_SDK/platforms/$SDK_PLATFORM/android.jar" ]; then
-  echo "== $SDK_LINK -> $LOCAL_SDK"
+LOCAL_PLATFORM=$LOCAL_SDK/platforms/$SDK_PLATFORM
+if [ ! -f "$LOCAL_PLATFORM/android.jar" ]; then
+  LOCAL_PLATFORM=$(ls -d "$LOCAL_SDK"/platforms/android-* 2>/dev/null | sort -V |
+    tail -n 1)
+fi
+if [ -n "$LOCAL_PLATFORM" ] && [ -f "$LOCAL_PLATFORM/android.jar" ]; then
+  if [ "${LOCAL_PLATFORM##*/}" != "$SDK_PLATFORM" ]; then
+    echo "Note: using ${LOCAL_PLATFORM##*/}'s android.jar; DEPS pins $SDK_PLATFORM." >&2
+  fi
+  echo "== $SDK_LINK/platforms/$SDK_PLATFORM -> $LOCAL_PLATFORM"
   rm -rf "$SDK_LINK"
-  ln -sfn "$LOCAL_SDK" "$SDK_LINK"
+  mkdir -p "$SDK_LINK/platforms"
+  ln -sfn "$LOCAL_PLATFORM" "$SDK_LINK/platforms/$SDK_PLATFORM"
 else
   # The package is rooted at the SDK root (platforms/android-<version>/...).
   [ -L "$SDK_LINK" ] && rm -f "$SDK_LINK"
+  [ -L "$SDK_LINK/platforms/$SDK_PLATFORM" ] && rm -rf "$SDK_LINK"
   cipd_fetch "$SDK_LINK" "$pkg" "$ver"
 fi
 
 # javap is used to generate JNI headers. The build expects it at
-# third_party/jdk/current/bin/javap.
+# third_party/jdk/current/bin/javap; any recent JDK's works.
 JDK_LINK=$SRC/third_party/jdk/current
-if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/javap" ]; then
+LOCAL_JDK=${JAVA_HOME:-}
+if [ -z "$LOCAL_JDK" ] && command -v javap >/dev/null; then
+  LOCAL_JDK=$(dirname "$(dirname "$(readlink -f "$(command -v javap)")")")
+fi
+if [ -n "$LOCAL_JDK" ] && [ -x "$LOCAL_JDK/bin/javap" ]; then
+  echo "== $JDK_LINK -> $LOCAL_JDK"
   rm -rf "$JDK_LINK"
-  ln -sfn "$JAVA_HOME" "$JDK_LINK"
+  ln -sfn "$LOCAL_JDK" "$JDK_LINK"
 else
   [ -L "$JDK_LINK" ] && rm -f "$JDK_LINK"
   read -r pkg ver < <(deps_query third_party/jdk/current:chromium/third_party/jdk)
