@@ -1,13 +1,45 @@
 # webrtc-min
 
-Builds WebRTC's `libjingle_peerconnection_so.so` for Android (arm64) without
+Builds WebRTC's `libjingle_peerconnection_so.so` for Android without
 depot_tools, gclient or the multi-gigabyte Chromium dependency set.
+
+## Android with CMake
+
+The `webrtc` and `third_party` submodules are trimmed forks of WebRTC and of
+the Chromium libraries it uses (~90 MB checked out), each with plain CMake
+files in place of gn. Every fork's `main-min` branch starts from an upstream
+snapshot, and its `RECIPE.md` lists what was removed and changed.
+
+```sh
+git clone --recursive https://github.com/komakai/webrtc-min.git
+cd webrtc-min
+cmake -B out/arm64 -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=23
+ninja -C out/arm64 jingle_peerconnection_so   # -> out/arm64/webrtc/sdk/libjingle_peerconnection_so.so
+```
+
+Requirements: CMake 3.22+, Ninja and an Android NDK (r30, as WebRTC's DEPS
+pins). arm64-v8a, armeabi-v7a, x86 and x86_64 all build; x86 uses the NDK's
+yasm for libjpeg's SIMD.
+
+This build matches the gn one with both options below off: no software video
+codecs (video uses MediaCodec) and no protobuf. On arm64 it exports the same
+JNI symbols as gn's library, and the stripped size is within 1%. The generated
+JNI headers are checked in, so the build needs no python or JDK; regenerating
+them (see `webrtc/RECIPE.md`) still uses the gn build below. The compile flags
+follow Chromium's release config for Android, minus its warning flags,
+`-Werror`, debug-info flags and the `-fsanitize=...`/`-fsanitize-trap=...`
+hardening checks (array bounds, return, unreachable).
+
+## Android with gn
+
 `fetch_webrtc_android_mac.sh` (macOS) and `fetch_webrtc_android.sh` (Linux
-x86_64) sparse-fetch only what the build reads (~295 MB, or ~216 MB with both
+x86_64) sparse-fetch only what the gn build reads (~295 MB, or ~216 MB with both
 options below off) and apply the patches here.
 
-The Linux script is a port of the Mac one that has not yet been run on Linux;
-its original version (in git history) was.
+The Linux script has been run on WSL2 (Ubuntu 24.04) with both options below
+off; its default configuration hasn't been tried on Linux yet.
 
 ```sh
 ./fetch_webrtc_android_mac.sh . [webrtc-revision]   # or fetch_webrtc_android.sh
@@ -19,7 +51,10 @@ ninja -C out/android_arm64 libjingle_peerconnection_so
 Requirements: git, curl, unzip, python3 (plus Xcode on macOS), an Android NDK matching the
 major version in WebRTC's `DEPS` (set `ANDROID_NDK_HOME`), and a JDK.
 An installed Android SDK (`ANDROID_HOME`) and a `ninja` on `PATH` are used
-when present instead of downloading them.
+when present instead of downloading them. On Linux, the JDK of the `javap` on
+`PATH` is also used, and so is the SDK's newest platform when the SDK doesn't
+have the version DEPS pins (javap only reads framework class signatures from
+it). Together these skip ~470 MB of downloads.
 
 Options (environment variables):
 

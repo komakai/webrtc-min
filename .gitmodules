@@ -1,0 +1,8 @@
+[submodule "webrtc"]
+	path = webrtc
+	url = https://github.com/komakai/webrtc-src-min.git
+	branch = main-min
+[submodule "third_party"]
+	path = third_party
+	url = https://github.com/komakai/webrtc-third_party-min.git
+	branch = main-min
