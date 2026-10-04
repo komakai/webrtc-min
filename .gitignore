@@ -4,3 +4,10 @@
 .DS_Store
 /ios/
 /out/
+# Gradle (android/)
+/android/.gradle/
+/android/.kotlin/
+/android/build/
+/android/libwebrtc/build/
+/android/libwebrtc/.cxx/
+/android/local.properties

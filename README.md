@@ -39,6 +39,32 @@ on Android, 100 on iOS). The library is the same size
 with the same exports; `third_party/RECIPE.md` has how the lists were made and
 checked. `-DWEBRTC_MIN=ON/OFF` overrides the variable.
 
+## Android AAR with Gradle
+
+`android/` is a Gradle project (Kotlin DSL) that builds `libwebrtc.aar`: the
+Java API from `webrtc/sdk/android` (the classes of gn's `libwebrtc` jar,
+without the software video codecs') and `libjingle_peerconnection_so.so` for
+each ABI, which the Android Gradle plugin builds with the CMake build above
+(with `WEBRTC_MIN`).
+
+```sh
+cd android
+ANDROID_NDK_HOME=/path/to/android-ndk-r30 ./gradlew :libwebrtc:assembleRelease
+# -> libwebrtc/build/outputs/aar/libwebrtc-release.aar
+```
+
+Requirements: JDK 17+, an Android SDK with platform 36 (`ANDROID_HOME` or
+`sdk.dir` in `android/local.properties`), the r30 NDK (in the SDK, or
+`ANDROID_NDK_HOME`), and CMake 3.22+ with Ninja: the SDK's CMake package, or
+another one named by `cmake.dir` in `local.properties` (e.g. `cmake.dir=/usr`).
+`-Pwebrtc.abis=arm64-v8a` limits the ABIs (default: all four).
+
+jni_zero's generated Java (the `*Jni` classes and the `GEN_JNI`/`J.N` proxies
+whose hashed natives the library exports) is checked in next to the generated
+headers. The AAR's `proguard.txt` carries jni_zero's keep rules for apps that
+use R8. Apps load the library with `System.loadLibrary("jingle_peerconnection_so")`,
+which `PeerConnectionFactory.initialize` does by default.
+
 ## iOS with CMake
 
 The same submodules build `WebRTC.framework` with Xcode's clang, one
