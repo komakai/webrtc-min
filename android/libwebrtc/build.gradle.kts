@@ -18,6 +18,7 @@ android {
 
     defaultConfig {
         minSdk = 23
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Keeps the JNI entry points (and @CalledByNative methods) in apps
         // that use R8.
         consumerProguardFiles(webrtcMin.resolve("third_party/jni_zero/proguard.flags"))
@@ -75,4 +76,9 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     implementation("androidx.annotation:annotation:1.9.1")
+
+    androidTestImplementation("androidx.test:core:1.7.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("junit:junit:4.13.2")
 }

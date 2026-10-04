@@ -63,7 +63,18 @@ jni_zero's generated Java (the `*Jni` classes and the `GEN_JNI`/`J.N` proxies
 whose hashed natives the library exports) is checked in next to the generated
 headers. The AAR's `proguard.txt` carries jni_zero's keep rules for apps that
 use R8. Apps load the library with `System.loadLibrary("jingle_peerconnection_so")`,
-which `PeerConnectionFactory.initialize` does by default.
+which `PeerConnectionFactory.initialize` does by default. As with upstream's
+AAR, apps must declare the `INTERNET` and `ACCESS_NETWORK_STATE` permissions
+themselves: without the latter, WebRTC's network monitor aborts the process.
+
+`libwebrtc/src/androidTest` is a smoke test: it loads the library through the
+Java API, converts video frame buffers, lists the MediaCodec video codecs and
+connects two PeerConnections over loopback (audio, video and a data channel
+with a message sent across, so ICE, DTLS-SRTP and SCTP). Run it on a device
+with `./gradlew :libwebrtc:connectedAndroidTest`, or build it with
+`assembleDebugAndroidTest`, install the APK and run
+`adb shell am instrument -w org.webrtc.test/androidx.test.runner.AndroidJUnitRunner`.
+It passes on a Pixel 8a (Android 16, arm64).
 
 ## iOS with CMake
 
