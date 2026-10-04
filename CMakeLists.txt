@@ -108,6 +108,79 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm)")
   add_compile_definitions(__ARM_NEON__=1)
 endif()
 
+# With WEBRTC_IOS_SLICES (a list of environment:architecture, e.g.
+# "device:arm64;simulator:arm64;simulator:x86_64"), this project builds only
+# WebRTC.xcframework: each slice is a sub-build of this source tree for one
+# SDK and architecture, with the same generator (so with -G Xcode, each is an
+# Xcode project under slices/), and the WebRTC_xcframework target builds them
+# all and combines their frameworks:
+#
+#   cmake -B out/ios -G Xcode -DCMAKE_SYSTEM_NAME=iOS \
+#     "-DWEBRTC_IOS_SLICES=device:arm64;simulator:arm64;simulator:x86_64"
+#   xcodebuild -project out/ios/webrtc_min.xcodeproj -target WebRTC_xcframework
+#     # -> out/ios/WebRTC.xcframework
+if(IOS AND WEBRTC_IOS_SLICES)
+  include(ExternalProject)
+  if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0)
+  endif()
+  # The slices are configured and built from inside this project's build
+  # (e.g. by Xcode), whose environment (SDKROOT, ARCHS, ...) would break their
+  # compiler detection, so they get a clean one.
+  set(clean_env /usr/bin/env -i "PATH=$ENV{PATH}" "HOME=$ENV{HOME}")
+  if(DEFINED ENV{DEVELOPER_DIR})
+    list(APPEND clean_env "DEVELOPER_DIR=$ENV{DEVELOPER_DIR}")
+  endif()
+  set(slice_targets)
+  set(slice_dirs)
+  foreach(slice IN LISTS WEBRTC_IOS_SLICES)
+    if(NOT slice MATCHES "^(device|simulator):(arm64|x86_64)$")
+      message(FATAL_ERROR "WEBRTC_IOS_SLICES: unknown slice ${slice}; use "
+        "device:arm64, simulator:arm64 or simulator:x86_64")
+    endif()
+    set(environment ${CMAKE_MATCH_1})
+    set(arch ${CMAKE_MATCH_2})
+    if(environment STREQUAL "device")
+      set(sdk iphoneos)
+    else()
+      set(sdk iphonesimulator)
+    endif()
+    set(dir ${CMAKE_CURRENT_BINARY_DIR}/slices/${environment}_${arch})
+    ExternalProject_Add(webrtc_${environment}_${arch}
+      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+      BINARY_DIR ${dir}
+      CONFIGURE_COMMAND ${clean_env} ${CMAKE_COMMAND}
+        -S ${CMAKE_CURRENT_SOURCE_DIR} -B ${dir} -G ${CMAKE_GENERATOR}
+        -DCMAKE_SYSTEM_NAME=iOS
+        -DCMAKE_OSX_SYSROOT=${sdk}
+        -DCMAKE_OSX_ARCHITECTURES=${arch}
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_CONFIGURATION_TYPES=Release
+        -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+        -DWEBRTC_MIN=${WEBRTC_MIN}
+      BUILD_COMMAND ${clean_env} ${CMAKE_COMMAND}
+        --build ${dir} --config Release --target WebRTC
+      INSTALL_COMMAND ""
+      BUILD_ALWAYS ON
+      USES_TERMINAL_BUILD ON
+    )
+    list(APPEND slice_targets webrtc_${environment}_${arch})
+    list(APPEND slice_dirs ${environment}=${dir})
+  endforeach()
+  string(REPLACE ";" "|" slice_dirs "${slice_dirs}")
+  add_custom_target(WebRTC_xcframework ALL
+    COMMAND ${CMAKE_COMMAND}
+      -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/WebRTC.xcframework
+      -DSLICES=${slice_dirs}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/ios_xcframework.cmake
+    DEPENDS ${slice_targets}
+    COMMENT "Creating WebRTC.xcframework"
+    VERBATIM
+  )
+  return()
+endif()
+
 if(IOS)
   # One architecture per build, like gn; xcframeworks combine the builds.
   # CMake leaves CMAKE_SYSTEM_PROCESSOR at the host's for iOS, so set it from

@@ -78,23 +78,37 @@ It passes on a Pixel 8a (Android 16, arm64).
 
 ## iOS with CMake
 
-The same submodules build `WebRTC.framework` with Xcode's clang, one
-architecture per build directory:
+The same submodules build `WebRTC.xcframework` (device arm64, simulator arm64
+and x86_64) with Xcode's clang, in two steps:
+
+```sh
+cmake -B out/ios -G Xcode -DCMAKE_SYSTEM_NAME=iOS \
+  "-DWEBRTC_IOS_SLICES=device:arm64;simulator:arm64;simulator:x86_64"
+xcodebuild -project out/ios/webrtc_min.xcodeproj -target WebRTC_xcframework
+# -> out/ios/WebRTC.xcframework
+```
+
+`WEBRTC_IOS_SLICES` lists the slices (any of `device:arm64`,
+`simulator:arm64` and `simulator:x86_64`; `CMAKE_OSX_DEPLOYMENT_TARGET`
+defaults to 14.0). Each is a sub-build of this source tree for one SDK and
+architecture, with the same generator (with `-G Xcode`, an Xcode project under
+`out/ios/slices/`); `WebRTC_xcframework` builds them, merges the simulator
+slices with `lipo` and runs `xcodebuild -create-xcframework`.
+
+A single slice can also be built directly, giving `WebRTC.framework`:
 
 ```sh
 cmake -B out/ios-arm64 -G Ninja -DCMAKE_SYSTEM_NAME=iOS \
   -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0
 ninja -C out/ios-arm64 WebRTC   # -> out/ios-arm64/webrtc/sdk/WebRTC.framework
-xcodebuild -create-xcframework \
-  -framework out/ios-arm64/webrtc/sdk/WebRTC.framework -output out/WebRTC.xcframework
 ```
+
+(for the simulator, add `-DCMAKE_OSX_SYSROOT=iphonesimulator`).
 
 Like the Android build, it has no software video codecs (video uses
 VideoToolbox's H.264/H.265; the VP8/VP9/AV1 classes and headers are left out)
 and no protobuf. Otherwise the framework has the same public headers, module
-map and exported `RTC*` classes as gn's (see `webrtc/RECIPE.md`). Only device
-(arm64) builds are supported so far: the simulator would also need
-`-DCMAKE_OSX_SYSROOT=iphonesimulator` and an `iPhoneSimulator` Info.plist.
+map and exported `RTC*` classes as gn's (see `webrtc/RECIPE.md`).
 
 ## Android with gn
 
