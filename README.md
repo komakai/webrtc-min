@@ -21,8 +21,7 @@ ninja -C out/arm64 jingle_peerconnection_so   # -> out/arm64/webrtc/sdk/libjingl
 ```
 
 Requirements: CMake 3.22+, Ninja and an Android NDK (r30, as WebRTC's DEPS
-pins). arm64-v8a, armeabi-v7a, x86 and x86_64 all build; x86 uses the NDK's
-yasm for libjpeg's SIMD.
+pins). arm64-v8a, armeabi-v7a, x86 and x86_64 all build.
 
 This build matches the gn one with both options below off: no software video
 codecs (video uses MediaCodec) and no protobuf. On arm64 it exports the same
@@ -35,8 +34,8 @@ hardening checks (array bounds, return, unreachable).
 
 Set the environment variable `WEBRTC_MIN` (e.g. `WEBRTC_MIN=1 cmake -B ...`)
 to compile only the third-party files WebRTC links: Abseil, BoringSSL, libyuv,
-Opus and sframe without the files no WebRTC build loads, and on Android no
-libjpeg_turbo (about 300 fewer files on Android). The library is the same size
+Opus and sframe without the files no WebRTC build loads (about 220 fewer files
+on Android, 100 on iOS). The library is the same size
 with the same exports; `third_party/RECIPE.md` has how the lists were made and
 checked. `-DWEBRTC_MIN=ON/OFF` overrides the variable.
 
