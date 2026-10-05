@@ -57,8 +57,8 @@ Requirements: JDK 17+, an Android SDK with platform 36 (`ANDROID_HOME` or
 `sdk.dir` in `android/local.properties`), the r30 NDK (in the SDK, or
 `ANDROID_NDK_HOME`), and CMake 3.22+ with Ninja: the SDK's CMake package, or
 another one named by `cmake.dir` in `local.properties` (e.g. `cmake.dir=/usr`).
-`-Pwebrtc.abis=arm64-v8a` limits the ABIs (default: all four); to keep a
-choice, put `webrtc.abis=arm64-v8a` in `local.properties`.
+It builds `arm64-v8a` by default however it is possible to configure by
+setting `webrtc.abis=...` in `local.properties`.
 
 jni_zero's generated Java (the `*Jni` classes and the `GEN_JNI`/`J.N` proxies
 whose hashed natives the library exports) is checked in next to the generated
