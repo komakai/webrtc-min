@@ -1,9 +1,8 @@
-# WebRTC checkout and build output created by fetch_webrtc_android_mac.sh
-/src/
+# Build output, and checkouts made by the gn/ scripts (e.g. gn/android/).
+/out/
+/gn/*/
 *.log
 .DS_Store
-/ios/
-/out/
 # Gradle (android/)
 /android/.gradle/
 /android/.kotlin/
