@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "webrtc-min"
-include(":libwebrtc")
+include(":webrtc")

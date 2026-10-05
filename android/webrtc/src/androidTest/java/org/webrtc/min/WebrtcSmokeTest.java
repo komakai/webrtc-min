@@ -41,7 +41,7 @@ import org.webrtc.audio.JavaAudioDeviceModule;
  * plus audio and video transceivers (SRTP negotiation).
  */
 @RunWith(AndroidJUnit4.class)
-public class LibwebrtcSmokeTest {
+public class WebrtcSmokeTest {
   private static final int TIMEOUT_S = 20;
 
   private EglBase eglBase;

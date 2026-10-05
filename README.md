@@ -41,7 +41,7 @@ checked. `-DWEBRTC_MIN=ON/OFF` overrides the variable.
 
 ## Android AAR with Gradle
 
-`android/` is a Gradle project (Kotlin DSL) that builds `libwebrtc.aar`: the
+`android/` is a Gradle project (Kotlin DSL) that builds `webrtc.aar`: the
 Java API from `webrtc/sdk/android` (the classes of gn's `libwebrtc` jar,
 without the software video codecs') and `libjingle_peerconnection_so.so` for
 each ABI, which the Android Gradle plugin builds with the CMake build above
@@ -49,8 +49,8 @@ each ABI, which the Android Gradle plugin builds with the CMake build above
 
 ```sh
 cd android
-ANDROID_NDK_HOME=/path/to/android-ndk-r30 ./gradlew :libwebrtc:assembleRelease
-# -> libwebrtc/build/outputs/aar/libwebrtc-release.aar
+ANDROID_NDK_HOME=/path/to/android-ndk-r30 ./gradlew :webrtc:assembleRelease
+# -> webrtc/build/outputs/aar/webrtc-release.aar
 ```
 
 Requirements: JDK 17+, an Android SDK with platform 36 (`ANDROID_HOME` or
@@ -68,11 +68,11 @@ which `PeerConnectionFactory.initialize` does by default. As with upstream's
 AAR, apps must declare the `INTERNET` and `ACCESS_NETWORK_STATE` permissions
 themselves: without the latter, WebRTC's network monitor aborts the process.
 
-`libwebrtc/src/androidTest` is a smoke test: it loads the library through the
+`webrtc/src/androidTest` is a smoke test: it loads the library through the
 Java API, converts video frame buffers, lists the MediaCodec video codecs and
 connects two PeerConnections over loopback (audio, video and a data channel
 with a message sent across, so ICE, DTLS-SRTP and SCTP). Run it on a device
-with `./gradlew :libwebrtc:connectedAndroidTest`, or build it with
+with `./gradlew :webrtc:connectedAndroidTest`, or build it with
 `assembleDebugAndroidTest`, install the APK and run
 `adb shell am instrument -w org.webrtc.test/androidx.test.runner.AndroidJUnitRunner`.
 It passes on a Pixel 8a (Android 16, arm64).

@@ -1,6 +1,6 @@
 import java.util.Properties
 
-// libwebrtc.aar: WebRTC's Android Java API (sdk/android, as gn's libwebrtc
+// webrtc.aar: WebRTC's Android Java API (sdk/android, as gn's libwebrtc
 // jar, without the software video codec classes) and libjingle_peerconnection_so.so,
 // which the Android Gradle plugin builds with webrtc-min's CMakeLists.txt.
 plugins {
