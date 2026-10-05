@@ -1,3 +1,5 @@
+import java.util.Properties
+
 // libwebrtc.aar: WebRTC's Android Java API (sdk/android, as gn's libwebrtc
 // jar, without the software video codec classes) and libjingle_peerconnection_so.so,
 // which the Android Gradle plugin builds with webrtc-min's CMakeLists.txt.
@@ -7,6 +9,14 @@ plugins {
 
 // The webrtc-min checkout (this project is its android/ directory).
 val webrtcMin: File = rootDir.parentFile
+
+// The ABIs to build: -Pwebrtc.abis, else webrtc.abis in the (untracked)
+// local.properties, else the default in gradle.properties.
+val webrtcAbis: String = gradle.startParameter.projectProperties["webrtc.abis"]
+    ?: rootDir.resolve("local.properties").takeIf { it.isFile }
+        ?.let { file -> Properties().apply { file.reader().use { load(it) } } }
+        ?.getProperty("webrtc.abis")
+    ?: providers.gradleProperty("webrtc.abis").get()
 
 android {
     namespace = "org.webrtc"
@@ -29,7 +39,7 @@ android {
             }
         }
         ndk {
-            abiFilters += providers.gradleProperty("webrtc.abis").get().split(",")
+            abiFilters += webrtcAbis.split(",")
         }
     }
 
