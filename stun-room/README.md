@@ -4,7 +4,8 @@ A STUN server and a room server for testing WebRTC on a LAN, in one Kotlin
 file with Ktor. The STUN server answers Binding requests over UDP with the
 sender's address in an XOR-MAPPED-ADDRESS (RFC 8489), and nothing else. The
 room server has rooms 1 to 4, each for up to two users who exchange messages
-(SDP, ICE candidates and so on) through it. `../webrtc-android-min` is a client.
+(SDP, ICE candidates and so on) through it. `../webrtcmin-app-android` and
+`../webrtcmin-app-ios` are clients.
 
 ```sh
 ./gradlew run                       # HTTP on 8080, STUN on UDP 3478

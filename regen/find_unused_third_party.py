@@ -9,7 +9,7 @@ loaded: the webrtc_min_exclude() lists in third_party/CMakeLists.txt. Files
 with CPU- or OS-specific code are never listed, as another ABI may need them,
 and assembly is left to the per-OS filter in that file.
 
-  tools/find_unused_third_party.py out/arm64 out/ios-arm64
+  regen/find_unused_third_party.py out/arm64 out/ios-arm64
 """
 import collections
 import os

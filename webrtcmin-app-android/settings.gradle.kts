@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "webrtc-android-min"
+rootProject.name = "webrtcmin-app-android"
 include(":app")

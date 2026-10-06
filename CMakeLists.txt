@@ -173,7 +173,7 @@ if(IOS AND WEBRTC_IOS_SLICES)
     COMMAND ${CMAKE_COMMAND}
       -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/WebRTC.xcframework
       -DSLICES=${slice_dirs}
-      -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/ios_xcframework.cmake
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/ios/ios_xcframework.cmake
     DEPENDS ${slice_targets}
     COMMENT "Creating WebRTC.xcframework"
     VERBATIM

@@ -1,4 +1,4 @@
-# webrtc-android-min
+# webrtcmin-app-android
 
 An Android app for testing webrtc-min: a video call between two phones through
 a stun-room server, with Jetpack Compose. It's two files:

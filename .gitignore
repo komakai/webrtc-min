@@ -1,6 +1,6 @@
-# Build output, and checkouts made by the gn/ scripts (e.g. gn/android/).
+# Build output, and checkouts made by the regen/gn/ scripts.
 /out/
-/gn/*/
+/regen/gn/*/
 *.log
 .DS_Store
 # Gradle (android/)

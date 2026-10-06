@@ -1,6 +1,6 @@
-# webrtc-ios-min
+# webrtcmin-app-ios
 
-An iOS app for testing webrtc-min, the counterpart of `../webrtc-android-min`:
+An iOS app for testing webrtc-min, the counterpart of `../webrtcmin-app-android`:
 a video call between two phones through a stun-room server, with SwiftUI. It's
 two files: `WebRTCMin/WebRTCMinApp.swift` (the screens) and
 `WebRTCMin/Call.swift` (signaling and the PeerConnection).

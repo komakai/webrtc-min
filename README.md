@@ -23,11 +23,11 @@ ninja -C out/arm64 jingle_peerconnection_so   # -> out/arm64/webrtc/sdk/libjingl
 Requirements: CMake 3.22+, Ninja and an Android NDK (r30, as WebRTC's DEPS
 pins). arm64-v8a, armeabi-v7a, x86 and x86_64 all build.
 
-This build matches the gn one (`gn/README.md`) with both its options off: no software video
-codecs (video uses MediaCodec) and no protobuf. On arm64 it exports the same
-JNI symbols as gn's library, and the stripped size is within 1%. The generated
-JNI headers are checked in, so the build needs no python or JDK; regenerating
-them (see `webrtc/RECIPE.md`) still uses the gn build. The compile flags
+This build matches upstream's gn build without software video codecs (video
+uses MediaCodec) or protobuf. On arm64 it exports the same JNI symbols as gn's
+library, and the stripped size is within 1%. The generated JNI headers are
+checked in, so the build needs no python or JDK; regenerating them (see
+`webrtc/RECIPE.md`) still uses a gn build. The compile flags
 follow Chromium's release config for Android, minus its warning flags,
 `-Werror`, debug-info flags and the `-fsanitize=...`/`-fsanitize-trap=...`
 hardening checks (array bounds, return, unreachable).
@@ -111,18 +111,19 @@ VideoToolbox's H.264/H.265; the VP8/VP9/AV1 classes and headers are left out)
 and no protobuf. Otherwise the framework has the same public headers, module
 map and exported `RTC*` classes as gn's (see `webrtc/RECIPE.md`).
 
-## gn builds
+## Regenerating
 
-`gn/` has scripts that sparse-fetch the minimal upstream WebRTC checkout and
-build it with gn instead (Android from macOS or Linux, iOS from macOS), with
-the patches they apply: see `gn/README.md`. The CMake build doesn't need them,
-but they're how the forks' pregenerated JNI headers and Java are regenerated
-(see `webrtc/RECIPE.md`).
+`regen/` has what regenerates the forks' checked-in files. `regen/gn/` has
+scripts that sparse-fetch the minimal upstream WebRTC checkout and build it
+with gn, for the pregenerated JNI headers and Java (see `webrtc/RECIPE.md` and
+`regen/gn/README.md`). `regen/find_unused_third_party.py` makes the
+`WEBRTC_MIN` file lists (see `third_party/RECIPE.md`). The CMake build needs
+neither.
 
 ## Testing on phones
 
-`webrtc-android-min/` is a Jetpack Compose app that uses the AAR for a video
-call between two phones, `webrtc-ios-min/` is the same app for iOS in SwiftUI,
+`webrtcmin-app-android/` is a Jetpack Compose app that uses the AAR for a video
+call between two phones, `webrtcmin-app-ios/` is the same app for iOS in SwiftUI,
 using `WebRTC.xcframework`, and `stun-room/` is the STUN and signaling server
 they call through (Kotlin with Ktor, for a LAN). An iPhone and an Android phone
 can call each other. Their READMEs have how to build and use them.

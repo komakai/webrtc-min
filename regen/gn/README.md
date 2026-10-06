@@ -2,8 +2,8 @@
 
 Scripts that fetch the minimal upstream WebRTC checkout (no depot_tools,
 gclient or cipd) and build it with gn, and the patches they apply to it. Run
-them from the repository root; checkouts under `gn/` (e.g. `gn/android/`,
-`gn/ios/`) are ignored by git.
+them from the repository root; checkouts under `regen/gn/` (e.g.
+`regen/gn/android/`, `regen/gn/ios/`) are ignored by git.
 
 ## Android
 
@@ -15,8 +15,8 @@ The Linux script has been run on WSL2 (Ubuntu 24.04) with both options below
 off; its default configuration hasn't been tried on Linux yet.
 
 ```sh
-gn/fetch_webrtc_android_mac.sh gn/android [webrtc-revision]  # or fetch_webrtc_android.sh
-cd gn/android/src
+regen/gn/fetch_webrtc_android_mac.sh regen/gn/android [webrtc-revision]  # or fetch_webrtc_android.sh
+cd regen/gn/android/src
 buildtools/mac/gn gen out/android_arm64              # buildtools/linux64 on Linux
 ninja -C out/android_arm64 libjingle_peerconnection_so
 ```
@@ -54,8 +54,8 @@ Patches:
 downloaded toolchain:
 
 ```sh
-gn/fetch_webrtc_ios.sh gn/ios [webrtc-revision]
-SLICES="device:arm64" gn/build_webrtc_ios.sh gn/ios   # -> gn/ios/out_ios_libs/WebRTC.xcframework
+regen/gn/fetch_webrtc_ios.sh regen/gn/ios [webrtc-revision]
+SLICES="device:arm64" regen/gn/build_webrtc_ios.sh regen/gn/ios   # -> regen/gn/ios/out_ios_libs/WebRTC.xcframework
 ```
 
 `SLICES` defaults to `device:arm64 simulator:arm64 simulator:x64`, as in
