@@ -122,6 +122,7 @@ but they're how the forks' pregenerated JNI headers and Java are regenerated
 ## Testing on phones
 
 `webrtc-android-min/` is a Jetpack Compose app that uses the AAR for a video
-call between two Android phones, and `stun-room/` is the STUN and signaling
-server it calls through (Kotlin with Ktor, for a LAN). Their READMEs have how
-to build and use them.
+call between two phones, `webrtc-ios-min/` is the same app for iOS in SwiftUI,
+using `WebRTC.xcframework`, and `stun-room/` is the STUN and signaling server
+they call through (Kotlin with Ktor, for a LAN). An iPhone and an Android phone
+can call each other. Their READMEs have how to build and use them.
