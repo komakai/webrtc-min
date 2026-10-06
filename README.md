@@ -118,3 +118,10 @@ build it with gn instead (Android from macOS or Linux, iOS from macOS), with
 the patches they apply: see `gn/README.md`. The CMake build doesn't need them,
 but they're how the forks' pregenerated JNI headers and Java are regenerated
 (see `webrtc/RECIPE.md`).
+
+## Testing on phones
+
+`webrtc-android-min/` is a Jetpack Compose app that uses the AAR for a video
+call between two Android phones, and `stun-room/` is the STUN and signaling
+server it calls through (Kotlin with Ktor, for a LAN). Their READMEs have how
+to build and use them.
