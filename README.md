@@ -1,129 +1,92 @@
 # webrtc-min
 
-Builds WebRTC's `libjingle_peerconnection_so.so` for Android and
-`WebRTC.framework` for iOS without depot_tools, gclient or the multi-gigabyte
-Chromium dependency set.
+* ~~Install a hypervisor~~
+* ~~Download a Linux ISO image~~
+* ~~Create a VM/install ISO image~~
+* ~~Checkout depot tools~~
+* ~~Run fetch~~
+* ~~Wait~~
+* ~~Wait~~
+* ~~Wait~~
+* ~~Rerun fetch because your machine went into standby half way through and the checkout was incomplete~~
+* ~~Wait~~
+* ~~Wait~~
+* ~~Wait~~
+* ~~Run sync~~
+* ~~Generate targets~~
+* ~~Build target~~
 
-## Android with CMake
+webrtc-min has everything you need to build WebRCT for Android and iOS, without the massive download and complicated build steps.
 
-The `webrtc` and `third_party` submodules are trimmed forks of WebRTC and of
-the Chromium libraries it uses (~90 MB checked out), each with plain CMake
-files in place of gn. Every fork's `main-min` branch starts from an upstream
-snapshot, and its `RECIPE.md` lists what was removed and changed.
+## Checkout
 
 ```sh
 git clone --recursive https://github.com/komakai/webrtc-min.git
-cd webrtc-min
-cmake -B out/arm64 -G Ninja \
-  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
-  -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=23
-ninja -C out/arm64 jingle_peerconnection_so   # -> out/arm64/webrtc/sdk/libjingle_peerconnection_so.so
 ```
 
-Requirements: CMake 3.22+, Ninja and an Android NDK (r30, as WebRTC's DEPS
-pins). arm64-v8a, armeabi-v7a, x86 and x86_64 all build.
+**NOTE: be sure to clone recursively**
 
-This build matches upstream's gn build without software video codecs (video
-uses MediaCodec) or protobuf. On arm64 it exports the same JNI symbols as gn's
-library, and the stripped size is within 1%. The generated JNI headers are
-checked in, so the build needs no python or JDK; regenerating them (see
-`webrtc/RECIPE.md`) still uses a gn build. The compile flags
-follow Chromium's release config for Android, minus its warning flags,
-`-Werror`, debug-info flags and the `-fsanitize=...`/`-fsanitize-trap=...`
-hardening checks (array bounds, return, unreachable).
+## Android Build
 
-Set the environment variable `WEBRTC_MIN` (e.g. `WEBRTC_MIN=1 cmake -B ...`)
-to compile only the third-party files WebRTC links: Abseil, BoringSSL, libyuv,
-Opus and sframe without the files no WebRTC build loads (about 220 fewer files
-on Android, 100 on iOS). The library is the same size
-with the same exports; `third_party/RECIPE.md` has how the lists were made and
-checked. `-DWEBRTC_MIN=ON/OFF` overrides the variable.
+If you already have an Android build environment set up then you probably already have everything you need to build.
 
-## Android AAR with Gradle
+* Android Studio (recommended but not strictly required - a standalone JDK 17+ will suffice)
+* Android SDK (with platform 36 support installed)
+* Android NDK (r30)
+* CMake/ninja (install from "SDK Manager" if not already installed)
 
-`android/` is a Gradle project (Kotlin DSL) that builds `webrtc.aar`: the
-Java API from `webrtc/sdk/android` (the classes of gn's `libwebrtc` jar,
-without the software video codecs') and `libjingle_peerconnection_so.so` for
-each ABI, which the Android Gradle plugin builds with the CMake build above
-(with `WEBRTC_MIN`).
+Either of the following
+
+* Open the `android` subfolder in Android Studio and select `Build` > `Assemble Project`
+
+or
+
+* Run the following from command line in the `android` subfolder
 
 ```sh
-cd android
 ANDROID_NDK_HOME=/path/to/android-ndk-r30 ./gradlew :webrtc:assembleRelease
-# -> webrtc/build/outputs/aar/webrtc-release.aar
 ```
 
-Requirements: JDK 17+, an Android SDK with platform 36 (`ANDROID_HOME` or
-`sdk.dir` in `android/local.properties`), the r30 NDK (in the SDK, or
-`ANDROID_NDK_HOME`), and CMake 3.22+ with Ninja: the SDK's CMake package, or
-another one named by `cmake.dir` in `local.properties` (e.g. `cmake.dir=/usr`).
-It builds `arm64-v8a` by default however it is possible to configure by
-setting `webrtc.abis=...` in `local.properties`.
+The build output will be located at `webrtc/build/outputs/aar/webrtc-release.aar`
+The set of ABIs can be changed by creating a `local.properties` file in the `android`
+subfolder and setting the `webrtc.abis` property
 
-jni_zero's generated Java (the `*Jni` classes and the `GEN_JNI`/`J.N` proxies
-whose hashed natives the library exports) is checked in next to the generated
-headers. The AAR's `proguard.txt` carries jni_zero's keep rules for apps that
-use R8. Apps load the library with `System.loadLibrary("jingle_peerconnection_so")`,
-which `PeerConnectionFactory.initialize` does by default. As with upstream's
-AAR, apps must declare the `INTERNET` and `ACCESS_NETWORK_STATE` permissions
-themselves: without the latter, WebRTC's network monitor aborts the process.
+## iOS Build
 
-`webrtc/src/androidTest` is a smoke test: it loads the library through the
-Java API, converts video frame buffers, lists the MediaCodec video codecs and
-connects two PeerConnections over loopback (audio, video and a data channel
-with a message sent across, so ICE, DTLS-SRTP and SCTP). Run it on a device
-with `./gradlew :webrtc:connectedAndroidTest`, or build it with
-`assembleDebugAndroidTest`, install the APK and run
-`adb shell am instrument -w org.webrtc.test/androidx.test.runner.AndroidJUnitRunner`.
-It passes on a Pixel 8a (Android 16, arm64).
+If you already have an iOS build environment set up then you probably already have everything you need to build.
 
-## iOS with CMake
+* Xcode
+* CMake
 
-The same submodules build `WebRTC.xcframework` (device arm64, simulator arm64
-and x86_64) with Xcode's clang, in two steps:
+First generate the Xcode project by running the following command in the repository root:
 
 ```sh
 cmake -B out/ios -G Xcode -DCMAKE_SYSTEM_NAME=iOS \
   "-DWEBRTC_IOS_SLICES=device:arm64;simulator:arm64;simulator:x86_64"
-xcodebuild -project out/ios/webrtc_min.xcodeproj -target WebRTC_xcframework
 # -> out/ios/WebRTC.xcframework
 ```
 
-`WEBRTC_IOS_SLICES` lists the slices (any of `device:arm64`,
-`simulator:arm64` and `simulator:x86_64`; `CMAKE_OSX_DEPLOYMENT_TARGET`
-defaults to 14.0). Each is a sub-build of this source tree for one SDK and
-architecture, with the same generator (with `-G Xcode`, an Xcode project under
-`out/ios/slices/`); `WebRTC_xcframework` builds them, merges the simulator
-slices with `lipo` and runs `xcodebuild -create-xcframework`.
+Modify the target platforms by changing the `-DWEBRTC_IOS_SLICES` value as necessary.
 
-A single slice can also be built directly, giving `WebRTC.framework`:
+Then either
+
+* Open the generated Xcode project in the `out/ios/` folder and select `Product` -> `Build`
+
+or
+
+* Run the following command 
 
 ```sh
-cmake -B out/ios-arm64 -G Ninja -DCMAKE_SYSTEM_NAME=iOS \
-  -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0
-ninja -C out/ios-arm64 WebRTC   # -> out/ios-arm64/webrtc/sdk/WebRTC.framework
+xcodebuild -project out/ios/webrtc_min.xcodeproj -target WebRTC_xcframework
 ```
 
-(for the simulator, add `-DCMAKE_OSX_SYSROOT=iphonesimulator`).
+## Testing
 
-Like the Android build, it has no software video codecs (video uses
-VideoToolbox's H.264/H.265; the VP8/VP9/AV1 classes and headers are left out)
-and no protobuf. Otherwise the framework has the same public headers, module
-map and exported `RTC*` classes as gn's (see `webrtc/RECIPE.md`).
+Minimal sample apps are located in the `webrtcmin-app-android` and `webrtcmin-app-ios`
+subfolders. Refer to the `README.md` files in those folders for information on building and running.
+A minimal stun/signalling server is located in the `stun-room` subfolder. Refer to the `README.md` in that folder for information on building and running on Local Area Network.
 
-## Regenerating
+## Misc
 
-`regen/` has what regenerates the forks' checked-in files. `regen/gn/` has
-scripts that sparse-fetch the minimal upstream WebRTC checkout and build it
-with gn, for the pregenerated JNI headers and Java (see `webrtc/RECIPE.md` and
-`regen/gn/README.md`). `regen/find_unused_third_party.py` makes the
-`WEBRTC_MIN` file lists (see `third_party/RECIPE.md`). The CMake build needs
-neither.
-
-## Testing on phones
-
-`webrtcmin-app-android/` is a Jetpack Compose app that uses the AAR for a video
-call between two phones, `webrtcmin-app-ios/` is the same app for iOS in SwiftUI,
-using `WebRTC.xcframework`, and `stun-room/` is the STUN and signaling server
-they call through (Kotlin with Ktor, for a LAN). An iPhone and an Android phone
-can call each other. Their READMEs have how to build and use them.
+The `regen` folder contains tools intended for use in generating updated versions of
+`webrtc_min` in the future and can safely be ignored.
