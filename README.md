@@ -4,11 +4,12 @@
 * ~~Download a Linux ISO image~~
 * ~~Create a VM/install ISO image~~
 * ~~Checkout depot tools~~
+* ~~Add depot tools to your path~~
 * ~~Run fetch~~
 * ~~Wait~~
 * ~~Wait~~
 * ~~Wait~~
-* ~~Rerun fetch because your machine went into standby half way through and the checkout was incomplete~~
+* ~~Rerun fetch from the start because your machine went into standby half way through and the checkout was corrupt~~
 * ~~Wait~~
 * ~~Wait~~
 * ~~Wait~~
@@ -16,7 +17,7 @@
 * ~~Generate targets~~
 * ~~Build target~~
 
-webrtc-min has everything you need to build WebRCT for Android and iOS, without the massive download and complicated build steps.
+webrtc-min has everything you need to build WebRCT for Android and iOS on Windows, Mac or Linux, without the 25GB download and the complicated build steps.
 
 ## Checkout
 
