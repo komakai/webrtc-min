@@ -36,7 +36,7 @@ final class Model: ObservableObject {
         // Audio plays on the speaker, as in a video call app.
         let audio = RTCAudioSessionConfiguration.webRTC()
         audio.mode = AVAudioSession.Mode.videoChat.rawValue
-        audio.categoryOptions = [.defaultToSpeaker, .allowBluetooth, .allowBluetoothA2DP]
+        audio.categoryOptions = [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP]
         RTCAudioSessionConfiguration.setWebRTC(audio)
         localView.videoContentMode = .scaleAspectFill
         localView.transform = CGAffineTransform(scaleX: -1, y: 1)  // A mirror.
@@ -85,15 +85,33 @@ struct ContentView: View {
             Color.black.ignoresSafeArea()
             if model.call == nil { home } else { callScreen }
         }
-        .alert("Settings", isPresented: $settingsOpen) {
-            TextField("stun-room server (host:port)", text: $draft)
-                .keyboardType(.URL)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-            Button("Cancel", role: .cancel) {}
-            Button("OK") { model.server = draft.trimmingCharacters(in: .whitespaces) }
-        } message: {
-            Text("stun-room server (host:port)")
+        .sheet(isPresented: $settingsOpen) { settings }
+    }
+
+    // A sheet rather than an alert with a text field, which needs iOS 16.
+    private var settings: some View {
+        NavigationView {
+            Form {
+                Section("stun-room server (host:port)") {
+                    TextField("192.168.11.12:8080", text: $draft)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                }
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { settingsOpen = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("OK") {
+                        model.server = draft.trimmingCharacters(in: .whitespaces)
+                        settingsOpen = false
+                    }
+                }
+            }
         }
     }
 

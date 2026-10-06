@@ -17,7 +17,7 @@ xcodebuild -project out/ios/webrtc_min.xcodeproj -target WebRTC_xcframework
 
 Then open `WebRTCMin.xcodeproj`, choose your team under Signing & Capabilities
 (and change the bundle identifier, `com.example.webrtcmin`, if it's taken), and
-run it on an iPhone or iPad (iOS 16 or later). From the command line:
+run it on an iPhone or iPad (iOS 15 or later). From the command line:
 
 ```sh
 xcodebuild -project WebRTCMin.xcodeproj -scheme WebRTCMin \
